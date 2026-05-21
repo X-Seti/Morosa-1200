@@ -1,3 +1,10 @@
+# X-Seti - May 2026 - Morosa-1200 - Donor Chip Transplant Guide
+
+"""
+TRANSPLANT.md - Donor chip removal, identification and transplant guide.
+Covers A1200 and CyberVision 64/3D donor boards.
+"""
+
 # Donor Chip Transplant Guide
 
 ## Overview

@@ -1,3 +1,10 @@
+# X-Seti - May 2026 - Morosa-1200 - References and Research Links
+
+"""
+REFERENCES.md - All git repos, datasheets, community links and standards
+references used in the Morosa-1200 project.
+"""
+
 # References & Research Links
 
 ## Related Open Hardware Projects

@@ -1,8 +1,15 @@
+# X-Seti - May 2026 - Morosa-1200 - Project Overview
+
+"""
+Morosa-1200 - Open hardware Mini-ITX Amiga 1200 AGA reimagining.
+Morosa is Northern Italian slang for girlfriend. A love letter to the Amiga 1200.
+"""
+
 # Morosa-1200
 
-**Morosa** — Italian slang for *girlfriend*. A love letter to the Amiga 1200.
-
-Morosa-1200 is an open hardware reimagining of the Commodore Amiga 1200 mainboard in the **Mini-ITX form factor (170×170mm)**, designed to accept transplanted AGA custom chips from a donor A1200 while adding modern connectivity that the original board never had.
+Morosa-1200 is an open hardware reimagining of the Commodore Amiga 1200 mainboard
+in the Mini-ITX form factor (170x170mm), designed to accept transplanted AGA custom
+chips from a donor A1200 while adding modern connectivity the original never had.
 
 This is not an emulator. Not an FPGA clone. Real silicon, new board.
 
@@ -10,127 +17,115 @@ This is not an emulator. Not an FPGA clone. Real silicon, new board.
 
 ## Project Goals
 
-- Accept all original A1200 AGA custom chips (Alice, Lisa, Paula, Gayle, Budgie, CIAs, 68020)
-- Mini-ITX form factor — fits any standard modern PC case
+- Accept all original A1200 AGA custom chips from a donor board
+- Mini-ITX form factor - fits any standard modern PC case
 - ATX power connector
 - Modern I/O without sacrificing Amiga authenticity
-- Transplant-friendly: designed around a donor A1200 as primary chip source
-- Open hardware — KiCad 8, fully documented, community forkable
+- Transplant-friendly: donor A1200 as primary chip source
+- Open hardware - KiCad 8, fully documented, community forkable
 
 ---
 
-## Inspired By / Standing On The Shoulders Of
+## Architecture Summary
 
-| Project | What we learned |
-|---|---|
-| [Amiga 1200+ (Vandezande)](https://bitbucket.org/jvandezande/amiga-1200) | Modular daughterboard approach, video bus exposure |
-| [Rämixx500 (SukkoPera)](https://github.com/SukkoPera/Raemixx500) | KiCad methodology, open hardware best practices |
-| [Alicia 1200 (Enterlogic)](https://www.enterlogic.se) | Mini-ITX AGA form factor validation, Tornado slot concept |
-| [AmigaPCI (jasonsbeer)](https://github.com/jasonsbeer/AmigaPCI) | Modern bus integration thinking |
-| [Deniser (endofexclusive)](https://github.com/endofexclusive/deniser) | FPGA chip replacement approach |
-| [Re-Amiga 1200 (Chucky Hertell)](https://wordpress.hertell.nu) | Donor chip transplant methodology |
+### Tier 1 - The Soul (Amiga)
+- 68030 @ 50MHz onboard (full 32-bit address bus)
+- 68882 FPU socket (U0 - always designed in, never fitted by Commodore)
+- AGA custom chips from donor A1200 (Alice, Lisa, Paula, Gayle, CIAs)
+- 1x 72-pin SIMM - Chip RAM (2MB max, Alice hard limit)
+- 2x 72-pin SIMM - Fast RAM (16MB max, non-EDO, 32-bit wide)
+
+### Tier 2 - The Bridge (ARM co-processor)
+- CM4 socket (BCM2711) - Raspberry Pi Compute Module 4
+- Direct CPU GPIO - cycle-accurate 68k bus interface (proven via PiStorm32)
+- 32MB/s sustained GPIO bandwidth - matches 68030 bus throughput
+- Runs Linux - handles all modern I/O services
+- Communicates with 68030 via dual-port SRAM window (BBC Tube architecture)
+- 40-pin GPIO header (RPi-compatible, direct BCM2711, low latency)
+- CM4 socket is swappable - future module upgrades without board respin
+
+### Tier 3 - The Expansion
+- Standard A1200 trapdoor connector (full 32-bit bus, all address lines)
+- Compatible: TF1230, TF1260, ACA1233n, Apollo, PiStorm32-Lite
+- Open sockets for future expansion cards
+- FPGA pads on trapdoor interface (populated or not at build time)
 
 ---
 
-## Target Hardware Specification
+## Hardware Specification
 
-### CPU
-- **Default:** Motorola 68EC020 @ 14.18MHz (PLCC-68, from donor A1200)
-- **Onboard socket:** PLCC-68, accepts 68EC020 or full 68020 (adds MMU)
-- **Upgrade path:** Trapdoor slot accepts standard A1200 accelerators (Blizzard 1230/1240/1260 etc)
-  - 68030 + 68882 FPU via accelerator
-  - 68040 (integral MMU+FPU) via accelerator
-  - 68060 (integral MMU+FPU, 75MHz) via accelerator
-
-### RAM
-- **Chip RAM:** 1x 72-pin SIMM socket — max **2MB** (hard Alice limit)
-- **Fast RAM:** 2x 72-pin SIMM sockets — max **16MB** onboard (32-bit, 70-80ns, non-EDO)
-- **Extended Fast RAM:** up to 128MB via trapdoor accelerator card
-- DIMM not used — 72-pin SIMM required to match memory controller bus width
 ### Core (Donor A1200 chips)
-- **Alice (MOS 8374):** AGA Agnus -- DMA, blitter, copper (PLCC-84, from donor)
-- **Lisa (MOS 4203):** AGA Denise — video output (PLCC-84, from donor)  
-- **Paula (MOS 8364):** Audio, floppy, serial, interrupts (PLCC-52, from donor)
-- **Gayle (MOS 391424):** IDE, PCMCIA, chip select logic (PLCC-52, from donor)
-- **Budgie (MOS 391425):** PCMCIA buffer (SMD, from donor)
-- **CIA × 2 (MOS 8520):** I/O controllers (PLCC-44, from donor)
-- **Kickstart ROM:** 2× 27C400 or equivalent
+- Alice (MOS 8374)    - AGA Agnus, DMA/blitter/copper (PLCC-84)
+- Lisa (MOS 4203)     - AGA Denise, video output (PLCC-84)
+- Paula (MOS 8364)    - Audio/floppy/serial/IRQ (PLCC-52)
+- Gayle (MOS 391424)  - IDE/PCMCIA/chip select (PLCC-52)
+- Budgie (MOS 391425) - PCMCIA buffer (SMD SOJ)
+- CIA x2 (MOS 8520)   - I/O controllers (PLCC-44)
+- 68030 CPU           - QFP-132, replaces donor 68EC020
+- 68882 FPU           - PLCC-52 socket at U0
+- Kickstart ROM x2    - DIP-40 sockets
 
 ### Video
-- **Lisa digital video bus** exposed on internal header
-- **HDMI output:** SiI9022A or ADV7513 HDMI transmitter fed from Lisa bus
-- **VGA port** (15kHz / 31kHz via onboard scan doubler)
-- **RGB Mini-DIN** (PS2/PS3 style) for direct RGB output
-- Internal video slot header (A4000-style, all digital signals)
+- Lisa digital video bus on internal header
+- HDMI output via SiI9022A or ADV7513 transmitter
+- VGA port via onboard scan doubler (15kHz/31kHz)
+- RGB Mini-DIN (PS2/PS3 style) for direct analogue RGB
+- A4000-style internal video slot header
 
 ### Graphics Expansion
-- **S3 Virge/VX chip** transplanted from CyberVision 64/3D donor card
-- **4MB VRAM** (transplanted from CyberVision donor)
+- S3 Virge/VX transplanted from CyberVision 64/3D donor
+- 4MB VRAM transplanted from donor card
 - CyberGraphX driver compatible
-- Connected via direct bus rather than Zorro slot
+- Direct bus connection (not Zorro slot)
 
 ### Audio
-- **Paula** retains floppy/serial/interrupt duties
-- Paula audio DMA signals tapped directly
-- **PCM5102A stereo DAC** — clean 16-bit audio out, 3.5mm jack
-- **Audio IN:** TLV320AIC or PCM1808 ADC, 3.5mm stereo input (AHI compatible)
-- **MIDI IN/OUT:** 6N137 optocoupler + DIN-5 connectors, wired to Paula serial TX/RX
+- Paula audio DMA tapped directly
+- PCM5102A stereo DAC - 16-bit audio out (3.5mm)
+- PCM1808 stereo ADC - audio in (3.5mm)
+- MIDI IN/OUT - 6N137 optocoupler + DIN-5, wired to Paula serial TX/RX
 
 ### Storage
-- **IDE header × 2** — primary (HDD) and secondary (CDROM) — standard 40-pin
-- **SD card slots × 2** — via IDE-to-SD bridge (e.g. IDESDA or SD-IDE adapter logic)
-- Floppy pin header (standard 34-pin, supports original A1200 drive or PC DD drive)
-- *(SATA not included — bus speed mismatch; CF/SD adapters preferred)*
+- IDE header x2 - primary (HDD) and secondary (CDROM), 40-pin
+- SD card slots x2 - via IDE-to-SD bridge
+- Floppy header - 34-pin, original A1200 or PC DD drive
+- NVMe M.2 via CM4 PCIe (Linux side)
 
-### USB
-- **USB host controller:** CH376S or MAX3421E
-- **4× USB-A ports** — keyboard, mouse, drives (HID + mass storage)
-- USB keyboard replaces original A1200 internal keyboard connector (MCU bridge)
-- USB mouse replaces DB9 mouse port
+### USB / Networking
+- USB host x4 via CM4 (Linux side, transparent to AmigaOS via device driver)
+- Gigabit Ethernet via CM4
+- USB keyboard/mouse bridged to AmigaOS via ATmega324PB MCU
 
-### Networking
-- **Ethernet:** ENC28J60 or W5500 SPI Ethernet, RJ45 on I/O shield
+### System Controllers
+- Keyboard MCU  - ATmega324PB (USB HID + A1200 keyboard protocol)
+- Power MCU     - ATtiny (soft power, reset, LEDs, ATX PS_ON)
+- ROM MCU       - Kickstart flash selection / switching
 
-### Expansion
-- **Trapdoor/clock port connector** — compatible with original A1200 accelerator cards
-- **Clock port header** — for existing clock port peripherals
-- *(PCI/PCIe not included — incompatible with 68020 bus architecture)*
+### Co-processor Communication
+- Dual-port SRAM (IDT70V24 or CY7C136, 1-4MB)
+- 68030 and CM4 both access shared window
+- BBC Tube-style message passing architecture
+- CM4 can interrupt 68030 via _INT2 or _INT6
+- 40-pin GPIO header - RPi-compatible, direct BCM2711
 
-### System Controllers (modern MCUs)
-- **Keyboard MCU:** ATmega324PB — handles USB HID keyboard + original A1200 keyboard protocol
-- **Power MCU:** ATtiny — soft power, reset, LED control, ATX PSU management
-- **ROM MCU:** Flash ROM selection / Kickstart switching
-
-### Form Factor & Power
-- **Mini-ITX:** 170 × 170mm
-- **ATX 24-pin** power connector
+### Form Factor
+- Mini-ITX 170x170mm, 6-layer PCB, KiCad 8
+- ATX 24-pin power connector
 - Standard ATX case mounting holes
-- I/O shield: HDMI, VGA, USB ×4, audio in/out, MIDI in/out, Ethernet, RGB Mini-DIN
+- I/O shield: HDMI, VGA, USB x4, audio in/out, MIDI, Ethernet, RGB Mini-DIN
 
 ---
 
-## What You Need From a Donor A1200
+## What You Need
 
-All of the following are transplanted from your existing A1200:
+### From a Donor A1200
+Alice, Lisa, Paula, Gayle, Budgie, CIA x2, crystal oscillators, Kickstart ROMs
 
-- Alice (PLCC-84)
-- Lisa (PLCC-84)
-- Paula (PLCC-52)
-- Gayle (PLCC-52)
-- Budgie (SMD)
-- CIA × 2 (PLCC-44)
-- 68EC020 CPU (PLCC-68)
-- Crystal oscillators (28.37516 MHz PAL / 28.63636 MHz NTSC)
-- Kickstart ROM chips
+### From a Donor CyberVision 64/3D
+S3 Virge/VX chip, 4x 1MB VRAM chips
 
-All passives, connectors, and modern ICs are sourced new.
-
----
-
-## What You Need From a Donor CyberVision 64/3D
-
-- S3 Virge/VX chip (BGA or QFP depending on card revision)
-- 4× 1MB VRAM chips
+### New Silicon
+68030, 68882, CM4 module, dual-port SRAM, PCM5102A, PCM1808,
+SiI9022A/ADV7513, ATmega324PB, ATtiny, CH376S, all passives
 
 ---
 
@@ -138,34 +133,34 @@ All passives, connectors, and modern ICs are sourced new.
 
 ```
 Morosa-1200/
-├── hardware/
-│   ├── mainboard/        # KiCad 8 project — main PCB
-│   ├── video/            # Video output daughterboard (HDMI/VGA)
-│   ├── audio/            # Audio I/O board (DAC/ADC/MIDI)
-│   └── io/               # USB/Ethernet/SD controller board
-├── docs/
-│   ├── DESIGN_NOTES.md   # Architecture decisions and rationale
-│   ├── TRANSPLANT.md     # Donor chip removal and transplant guide
-│   ├── BOM_NOTES.md      # Sourcing notes for hard-to-find parts
-│   └── REFERENCES.md     # Datasheets, schematics, community resources
-├── research/             # Reference schematics, datasheets, notes
-├── bom/                  # Bill of materials (CSV, interactive HTML)
-└── README.md
+- hardware/
+  - mainboard/    KiCad 8 project - main PCB
+  - video/        Video output board (HDMI/VGA/RGB)
+  - audio/        Audio I/O (DAC/ADC/MIDI)
+  - io/           USB/Ethernet/SD controller
+- docs/
+  - DESIGN_NOTES.md   Architecture decisions and rationale
+  - CPU_RAM.md        CPU/RAM/expansion strategy
+  - TRANSPLANT.md     Donor chip removal and transplant guide
+  - REFERENCES.md     Datasheets, schematics, community resources
+- research/       Reference schematics, datasheets, notes
+- bom/            Bill of materials (CSV, interactive HTML)
+- README.md
 ```
 
 ---
 
 ## Status
 
-🔴 **Pre-design / Research phase**
+Pre-design / Research phase
 
 - [ ] Finalise feature set
-- [ ] Gather all donor chip datasheets and pinouts
-- [ ] KiCad schematic — core chipset
-- [ ] KiCad schematic — video path
-- [ ] KiCad schematic — audio path
-- [ ] KiCad schematic — USB/IO
-- [ ] PCB layout — Mini-ITX
+- [ ] Gather donor chip datasheets and pinouts
+- [ ] KiCad schematic - core chipset
+- [ ] KiCad schematic - video path
+- [ ] KiCad schematic - audio path
+- [ ] KiCad schematic - USB/IO/CM4 interface
+- [ ] PCB layout - Mini-ITX 6-layer
 - [ ] Design review
 - [ ] Prototype fabrication
 - [ ] Bring-up and testing
@@ -174,27 +169,27 @@ Morosa-1200/
 
 ## Toolchain
 
-- **KiCad 8** — schematic capture and PCB layout
-- **JLCPCB / PCBWay** — fabrication (6-layer, controlled impedance)
-- Garuda Linux / KDE Wayland development environment
+- KiCad 8 - schematic and PCB layout
+- JLCPCB / PCBWay - fabrication (6-layer, controlled impedance)
+- Garuda Linux / KDE Wayland
 
 ---
 
 ## Licence
 
-Hardware design files: **CERN Open Hardware Licence v2 - Strongly Reciprocal (CERN-OHL-S)**  
-Documentation: **CC BY-SA 4.0**
+Hardware: CERN Open Hardware Licence v2 - Strongly Reciprocal (CERN-OHL-S)
+Documentation: CC BY-SA 4.0
 
 ---
 
-## Community & References
+## References
 
-- [Amiga Hardware Reference Manual](http://amigadev.elowar.com/)
-- [AmigaWiki](https://www.amigawiki.org)
-- [locator.reamiga.info](http://locator.reamiga.info)
-- [English Amiga Board](https://eab.abime.net)
-- [Retro Tinkering Discord](https://discord.gg/retrotinkering)
+- Amiga Hardware Reference: http://amigadev.elowar.com
+- AmigaWiki: https://www.amigawiki.org
+- PiStorm32-Lite hardware: https://github.com/PiStorm/pistorm32-lite-hardware
+- locator.reamiga.info: http://locator.reamiga.info
+- English Amiga Board: https://eab.abime.net
 
 ---
 
-*"Morosa" — Northern Italian slang for girlfriend. Because some loves never die.*
+"Morosa" - Northern Italian slang for girlfriend. Because some loves never die.

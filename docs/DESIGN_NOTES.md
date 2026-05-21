@@ -1,156 +1,126 @@
-# Morosa-1200 Design Notes
+# X-Seti - May 2026 - Morosa-1200 - Design Notes
+
+"""
+DESIGN_NOTES.md - Architecture decisions and rationale for Morosa-1200.
+Records why each design choice was made, open questions, and alternatives considered.
+"""
 
 ## Architecture Decisions
 
 ### Why Real Chips?
 The Morosa-1200 uses transplanted original AGA silicon rather than FPGA emulation.
 The AGA chipset has nuances in timing, DMA behaviour, and analogue output that
-FPGA cores still don't fully replicate. For a board built around a donor machine,
+FPGA cores still do not fully replicate. For a board built around a donor machine,
 keeping the real chips is both practical and philosophically correct.
 
 ### Why Mini-ITX?
-170×170mm fits in any modern case, supports standard ATX PSU, and is large enough
+170x170mm fits in any modern case, supports standard ATX PSU, and is large enough
 to accommodate the AGA chipset footprint plus modern I/O without heroic routing.
 The Alicia 1200 project has already proven Mini-ITX is viable for AGA.
 
-### Video Path
-Lisa outputs a parallel digital RGB bus (8-bit per channel on AGA). This bus is
-brought out to an internal header, feeding both:
-- An onboard scan doubler (15kHz → 31kHz) for VGA output
-- An HDMI transmitter IC (SiI9022A or ADV7513) for digital HDMI output
-- An RGB Mini-DIN (PS2/PS3 style connector) for direct analogue RGB
+### Why 68030 Not 68EC020?
+The 68EC020 (stock A1200 CPU) has only a 24-bit address bus - 16MB maximum
+regardless of RAM installed. The full 68030 gives:
+- 32-bit address bus (4GB addressable)
+- Built-in MMU (no external 68851 needed)
+- Instruction and data cache (vs 68020 instruction only)
+- Up to 50MHz
+- Pin-compatible upgrade path from 68020
 
-The A4000-style internal video slot connector carries all digital signals, allowing
-a future scan doubler / flicker fixer card if desired.
+The 68020 (full, not EC) is an acceptable fallback - same PLCC-68 package,
+same 32-bit address bus, no built-in MMU but cheaper and easier to source.
+
+### Why CM4 (BCM2711) for the ARM co-processor?
+Decision made after evaluating: BCM2711 (RPi4/CM4), RK3588S (OPi5c/5Plus),
+BCM2712 (RPi5), CIX CD8180 (OPi6 Plus).
+
+BCM2711 wins because:
+- Direct CPU GPIO - no PCIe hop (unlike RPi5 which goes via RP1)
+- PiStorm32 already proven at 32MB/s on this exact chip
+- Mature kernel, widest community, most drivers
+- CM4 module format - socketed, swappable, upgradeable
+- Developer owns RPi4B for firmware development today
+
+RK3588S (OPi5c) was second choice - also direct GPIO, faster CPU, but
+PiStorm-style firmware not yet ported. CM4 socket accepts future RK3588S
+module (Radxa CM5) when firmware matures - no board respin needed.
+
+RPi5 (BCM2712) rejected - GPIO goes via PCIe to RP1 south bridge.
+Higher latency, not cycle-accurate for 68k bus interface.
+
+OPi6 Plus (CIX CD8180) rejected - immature kernel, early-adopter drivers,
+too risky alongside PCB bring-up.
+
+### The BBC Tube Architecture
+The co-processor communication model is borrowed from the BBC Micro Tube interface.
+The Tube used a small FIFO register set between the 6502 host and co-processor.
+Neither CPU shared the other's RAM - they passed messages.
+
+On Morosa-1200:
+- Dual-port SRAM replaces the Tube ULA FIFO
+- 68030 and CM4 both have a window into the same physical SRAM
+- AmigaOS sees the CM4 as an accelerator/device via Autoconfig probe
+- CM4 can interrupt 68030 via _INT2 or _INT6
+- CM4 handles all modern I/O - AmigaOS never touches USB/Ethernet/NVMe directly
+- AmigaOS calls stub libraries that pass requests to CM4 transparently
+
+Key insight from BBC Tube: the co-processor wins not because it is faster,
+but because it has uncontended RAM. The 68030 loses cycles to AGA DMA.
+The CM4 runs on its own DDR4 with zero bus contention.
+
+### Video Path
+Lisa outputs a parallel digital RGB bus (8-bit per channel on AGA).
+This bus is exposed on an internal header feeding:
+- Onboard scan doubler (15kHz to 31kHz) for VGA output
+- HDMI transmitter IC (SiI9022A or ADV7513) for digital HDMI
+- RGB Mini-DIN (PS2/PS3 style connector) for direct analogue RGB
 
 ### Audio Path
-Paula's audio DMA output signals are tapped before the original RC filter network.
-A dedicated PCM5102A I2S DAC receives these signals for clean stereo output.
-Paula retains all non-audio duties: floppy controller, serial port (MIDI), interrupts.
-
-Audio input uses a PCM1808 or TLV320AIC ADC, feeding back into the system via
-the AHI audio hardware interface standard.
-
-MIDI uses Paula's built-in UART (31.25kbps) with a 6N137 optocoupler interface
-and standard DIN-5 connectors onboard — no external MIDI interface needed.
-
-### USB
-The CH376S USB host controller handles HID (keyboard, mouse) and mass storage.
-A separate ATmega324PB MCU bridges USB HID keyboard events to the A1200 keyboard
-matrix protocol, allowing any USB keyboard to work transparently with AmigaOS.
-
-### Storage
-IDE is the native A1200 storage interface via Gayle. Two 40-pin IDE headers are
-provided for HDD and CDROM. SD cards connect via IDE-to-SD bridge adapters.
-SATA is not included — the 68020 bus cannot sustain SATA speeds and a bridge
-chip would add significant complexity for marginal benefit.
+Paula audio DMA output signals tapped before the RC filter network.
+PCM5102A I2S DAC receives these for clean stereo output.
+Paula retains all non-audio duties: floppy, serial (MIDI), interrupts.
+Audio input uses PCM1808 ADC, feeding back via AHI.
+MIDI uses Paula built-in UART (31.25kbps) with 6N137 optocoupler and DIN-5 onboard.
 
 ### S3 Virge/VX Integration
-The CyberVision 64/3D uses an S3 Virge/VX with 4MB VRAM. On the original card
-this connects via Zorro II/III. On Morosa-1200 the chip connects directly to the
-local bus, bypassing the Zorro bottleneck. CyberGraphX drivers support this chip
-and will be used as-is.
+CyberVision 64/3D donor provides S3 Virge/VX and 4MB VRAM.
+Connected directly to local bus rather than via Zorro slot.
+CyberGraphX drivers support this chip and are used as-is.
+May be implemented as a daughterboard due to Virge/VX signal integrity requirements.
 
-This is the most complex part of the design. The Virge/VX has a 64-bit VRAM bus
-and requires careful signal integrity work. This may be implemented as a
-daughterboard rather than on the main PCB.
+### Storage
+IDE is the native A1200 interface via Gayle.
+Two 40-pin IDE headers for HDD and CDROM.
+SD cards via IDE-to-SD bridge adapters.
+NVMe M.2 via CM4 PCIe lane (Linux side only).
+SATA not included - bus speed mismatch, bridge chip complexity not justified.
 
-### Expansion
-The trapdoor connector is retained in full for compatibility with existing
-A1200 accelerator cards (Blizzard, Apollo, etc.).
-The clock port header is retained for existing clock port peripherals.
-PCI/PCIe expansion is architecturally incompatible with the 68020 bus and is
-not included.
-
-### Power
-Standard ATX 24-pin connector. A small ATtiny MCU handles soft power (ATX
-PS_ON signal), reset button, power LED, and HDD activity LED.
-The original A1200 used a custom PSU — ATX is a direct improvement.
-
----
-
-## CPU Upgrade Path
-
-The A1200 donor provides a 68EC020 @ 14.18MHz. Morosa-1200 targets upgradability:
-
-| CPU | Package | MMU | FPU | Max Clock | Notes |
-|---|---|---|---|---|---|
-| 68EC020 | PLCC-68 | No | No | 14MHz | Donor default |
-| 68020 | PLCC-68 | Yes | No | 33MHz | Drop-in, adds MMU |
-| 68030 | PGA-128/QFP-132 | Yes | No | 50MHz | Needs socket adapter |
-| 68EC030 | QFP-132 | No | No | 40MHz | No MMU variant |
-| 68040 | PGA-179/QFP-184 | Yes | Yes (int) | 40MHz | Integral FPU, hot |
-| 68060 | PGA | Yes | Yes (int) | 75MHz | Best performance |
-
-FPU options (external, for 68020/030):
-- **68881** — original FPU, PLCC or PGA, up to 25MHz
-- **68882** — faster FPU, PLCC or PGA, up to 50MHz, preferred
-
-The trapdoor connector supports standard A1200 accelerator cards (Blizzard 1230,
-1240, 1260 etc) which bring their own CPU + FPU + Fast RAM. The onboard CPU
-socket is for base operation only — most users will accelerate via trapdoor.
-
-The 68030 and above have a full 32-bit address bus = 4GB theoretical address space.
-Practical Fast RAM limits are set by the memory controller, not the CPU.
-
----
-
-## RAM Architecture
-
-### Chip RAM (Alice-controlled)
-Alice on the A1200 supports up to **2MB Chip RAM** maximum — this is a hard
-limit of the AGA Alice chip address lines, not the CPU. A single 72-pin SIMM
-socket on Morosa-1200 handles this (same as A4000 approach).
-
-- 1MB SIMM — standard
-- 2MB SIMM — maximum Alice supports
-- No benefit to larger SIMM for Chip RAM
-
-### Fast RAM (CPU local bus)
-Fast RAM is accessed directly by the CPU, bypassing the chip bus. Limits depend
-on the CPU installed:
-
-| CPU | Address Bus | Theoretical Max | Practical board max |
-|---|---|---|---|
-| 68020/030 | 32-bit | 4GB | 128MB (accelerator card) |
-| 68040/060 | 32-bit | 4GB | 128MB (accelerator card) |
-
-On the **motherboard** (no accelerator), Fast RAM connects via the local bus.
-The A4000 Fast RAM sockets accept 1, 4 or 8MB 72-pin SIMMs up to 16MB total on the motherboard, with up to 128MB via processor cards.
-
-Morosa-1200 targets **2x 72-pin SIMM sockets** for onboard Fast RAM:
-- Up to 2x 8MB = **16MB onboard Fast RAM** (same as A4000)
-- Must be 32-bit wide SIMMs (1Mx32 or 1Mx36), 70-80ns, non-EDO
-- EDO RAM not supported by the chipset memory controller
-
-EDO RAM is not supported by the Ramsey motherboard RAM controller, though some processor accelerator cards do accept and benefit from it.
-
-DIMM sockets are not practical here — the memory controller expects 72-pin SIMM
-timing and bus width. DIMM would require a full memory controller redesign.
-72-pin SIMMs are still available new (industrial stock) and via retro suppliers.
-
-### Summary
-- **Chip RAM:** 1x 72-pin SIMM socket, max 2MB
-- **Fast RAM:** 2x 72-pin SIMM sockets, max 16MB onboard
-- **Extended Fast RAM:** via trapdoor accelerator card (up to 128MB)
-- **Total addressable:** 2MB chip + 16MB fast onboard + 128MB accelerator
+### Power Sequencing
+CM4 boots first from its own SD/eMMC.
+Linux initialises all I/O, USB, networking.
+CM4 then releases 68030 reset line - Amiga boots.
+68030 comes up, Kickstart loads, detects ARM co-processor via shared SRAM probe.
+ATtiny MCU handles ATX PS_ON, soft power, reset, LEDs.
 
 ---
 
 ## Open Questions
 
 - S3 Virge/VX as daughterboard vs onboard?
-- SiI9022A vs ADV7513 for HDMI (availability/cost tradeoff)?
-- ENC28J60 vs W5500 for Ethernet (W5500 has hardware TCP/IP stack)?
-- Single IDE controller via Gayle or add a secondary ATA controller IC?
-- PCMCIA slot — retain on mainboard or move to Tornado-style expansion header?
+- SiI9022A vs ADV7513 for HDMI (availability vs cost)?
+- IDT70V24 vs CY7C136 for dual-port SRAM?
+- PCMCIA retained on mainboard or moved to Tornado-style expansion header?
+- iCE40 FPGA on GPIO header for arbitration - scope creep or necessary?
+- 40-pin GPIO header split (Amiga-accessible pins vs Linux-only)?
 
 ---
 
-## Reference Designs Studied
+## Alternatives Considered and Rejected
 
-- Amiga 1200+ (Vandezande) — bitbucket.org/jvandezande/amiga-1200
-- Rämixx500 (SukkoPera) — github.com/SukkoPera/Raemixx500  
-- Alicia 1200 (Enterlogic) — enterlogic.se
-- AmigaPCI (jasonsbeer) — github.com/jasonsbeer/AmigaPCI
-- Re-Amiga 1200 (Chucky Hertell) — wordpress.hertell.nu
+- PCI/PCIe on 68030 bus - architecturally incompatible, 68k bus too slow
+- DIMM sockets for RAM - memory controller requires 72-pin SIMM bus width
+- SATA - needs bridge chip, Amiga bus cannot sustain SATA speeds
+- EDO RAM - not supported by AGA memory controller
+- Onboard 68040/060 - conflicts with trapdoor accelerator slot
+- BCM2712 (RPi5) - GPIO via PCIe hop, not cycle-accurate
+- CIX CD8180 (OPi6) - immature kernel, too risky for hardware project
