@@ -1,0 +1,21 @@
+# KiCad
+*.bak
+*.kicad_pcb-bak
+*.sch-bak
+_autosave-*
+*.lck
+fp-info-cache
+
+# KiCad 6+ backup files
+**/*-backups/
+
+# Gerber outputs (generated, not stored in repo)
+/hardware/*/fab/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+*.swp
+*~
