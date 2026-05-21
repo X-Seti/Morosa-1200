@@ -34,9 +34,21 @@ This is not an emulator. Not an FPGA clone. Real silicon, new board.
 
 ## Target Hardware Specification
 
+### CPU
+- **Default:** Motorola 68EC020 @ 14.18MHz (PLCC-68, from donor A1200)
+- **Onboard socket:** PLCC-68, accepts 68EC020 or full 68020 (adds MMU)
+- **Upgrade path:** Trapdoor slot accepts standard A1200 accelerators (Blizzard 1230/1240/1260 etc)
+  - 68030 + 68882 FPU via accelerator
+  - 68040 (integral MMU+FPU) via accelerator
+  - 68060 (integral MMU+FPU, 75MHz) via accelerator
+
+### RAM
+- **Chip RAM:** 1x 72-pin SIMM socket — max **2MB** (hard Alice limit)
+- **Fast RAM:** 2x 72-pin SIMM sockets — max **16MB** onboard (32-bit, 70-80ns, non-EDO)
+- **Extended Fast RAM:** up to 128MB via trapdoor accelerator card
+- DIMM not used — 72-pin SIMM required to match memory controller bus width
 ### Core (Donor A1200 chips)
-- **CPU:** Motorola 68EC020 @ 14.18MHz (PLCC-68, from donor)
-- **Alice (MOS 8374):** AGA Agnus — DMA, blitter, copper (PLCC-84, from donor)
+- **Alice (MOS 8374):** AGA Agnus -- DMA, blitter, copper (PLCC-84, from donor)
 - **Lisa (MOS 4203):** AGA Denise — video output (PLCC-84, from donor)  
 - **Paula (MOS 8364):** Audio, floppy, serial, interrupts (PLCC-52, from donor)
 - **Gayle (MOS 391424):** IDE, PCMCIA, chip select logic (PLCC-52, from donor)

@@ -69,6 +69,74 @@ The original A1200 used a custom PSU — ATX is a direct improvement.
 
 ---
 
+## CPU Upgrade Path
+
+The A1200 donor provides a 68EC020 @ 14.18MHz. Morosa-1200 targets upgradability:
+
+| CPU | Package | MMU | FPU | Max Clock | Notes |
+|---|---|---|---|---|---|
+| 68EC020 | PLCC-68 | No | No | 14MHz | Donor default |
+| 68020 | PLCC-68 | Yes | No | 33MHz | Drop-in, adds MMU |
+| 68030 | PGA-128/QFP-132 | Yes | No | 50MHz | Needs socket adapter |
+| 68EC030 | QFP-132 | No | No | 40MHz | No MMU variant |
+| 68040 | PGA-179/QFP-184 | Yes | Yes (int) | 40MHz | Integral FPU, hot |
+| 68060 | PGA | Yes | Yes (int) | 75MHz | Best performance |
+
+FPU options (external, for 68020/030):
+- **68881** — original FPU, PLCC or PGA, up to 25MHz
+- **68882** — faster FPU, PLCC or PGA, up to 50MHz, preferred
+
+The trapdoor connector supports standard A1200 accelerator cards (Blizzard 1230,
+1240, 1260 etc) which bring their own CPU + FPU + Fast RAM. The onboard CPU
+socket is for base operation only — most users will accelerate via trapdoor.
+
+The 68030 and above have a full 32-bit address bus = 4GB theoretical address space.
+Practical Fast RAM limits are set by the memory controller, not the CPU.
+
+---
+
+## RAM Architecture
+
+### Chip RAM (Alice-controlled)
+Alice on the A1200 supports up to **2MB Chip RAM** maximum — this is a hard
+limit of the AGA Alice chip address lines, not the CPU. A single 72-pin SIMM
+socket on Morosa-1200 handles this (same as A4000 approach).
+
+- 1MB SIMM — standard
+- 2MB SIMM — maximum Alice supports
+- No benefit to larger SIMM for Chip RAM
+
+### Fast RAM (CPU local bus)
+Fast RAM is accessed directly by the CPU, bypassing the chip bus. Limits depend
+on the CPU installed:
+
+| CPU | Address Bus | Theoretical Max | Practical board max |
+|---|---|---|---|
+| 68020/030 | 32-bit | 4GB | 128MB (accelerator card) |
+| 68040/060 | 32-bit | 4GB | 128MB (accelerator card) |
+
+On the **motherboard** (no accelerator), Fast RAM connects via the local bus.
+The A4000 Fast RAM sockets accept 1, 4 or 8MB 72-pin SIMMs up to 16MB total on the motherboard, with up to 128MB via processor cards.
+
+Morosa-1200 targets **2x 72-pin SIMM sockets** for onboard Fast RAM:
+- Up to 2x 8MB = **16MB onboard Fast RAM** (same as A4000)
+- Must be 32-bit wide SIMMs (1Mx32 or 1Mx36), 70-80ns, non-EDO
+- EDO RAM not supported by the chipset memory controller
+
+EDO RAM is not supported by the Ramsey motherboard RAM controller, though some processor accelerator cards do accept and benefit from it.
+
+DIMM sockets are not practical here — the memory controller expects 72-pin SIMM
+timing and bus width. DIMM would require a full memory controller redesign.
+72-pin SIMMs are still available new (industrial stock) and via retro suppliers.
+
+### Summary
+- **Chip RAM:** 1x 72-pin SIMM socket, max 2MB
+- **Fast RAM:** 2x 72-pin SIMM sockets, max 16MB onboard
+- **Extended Fast RAM:** via trapdoor accelerator card (up to 128MB)
+- **Total addressable:** 2MB chip + 16MB fast onboard + 128MB accelerator
+
+---
+
 ## Open Questions
 
 - S3 Virge/VX as daughterboard vs onboard?
