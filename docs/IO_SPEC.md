@@ -237,3 +237,54 @@ Use cases:
 | MIDI in/out | Added | DIN-5 onboard, no external box |
 | SD x2 | Added | AmigaOS + CM4 independent |
 | VGA | Optional | Scan doubler output |
+
+---
+
+## Expansion Slot System (updated)
+
+### Row 1 -- PCI Standard (32-bit 33MHz)
+Via PLX PCI9052 bridge onboard.
+68030 local bus owns this slot directly.
+Standard PCI bracket -- backplate access.
+Target cards: Radeon 7000 PCI, Voodoo3 PCI.
+Native Warp3D and CGX/P96 to 68030.
+Any standard PCI card compatible.
+
+### Row 2 -- A1200 Trapdoor (offset, internal)
+150-pin edge connector, 90 degree upright (like PCIe slot).
+Offset inward -- no backplate cutout needed.
+68030 local bus, full 32-bit, all address lines live.
+Target cards: TF1260, ACA1233n, PiStorm32-Lite.
+All standard A1200 accelerators compatible.
+PiStorm32 works internally -- CM4 provides USB/Ethernet anyway.
+
+### Row 3 -- PCIe x8 (CM4 owned)
+Via PLX PEX8606 switch from CM4 PCIe lane.
+Standard PCIe bracket -- backplate access.
+Target: GPU (RX 5900 XT, R9 285 etc).
+Full height, full length card supported.
+
+### Row 4 -- PCIe x4 (CM4 owned)
+Via PLX PEX8606 switch from CM4 PCIe lane.
+Standard PCIe bracket -- backplate access.
+Target: NVMe adapter, 10GbE, sound card, USB3 expansion.
+Half height or full height card.
+
+### PCIe Switch
+PLX PEX8606 or PEX8608.
+One upstream port from CM4 PCIe Gen2 x1.
+Multiple downstream ports to Row 3, Row 4, M.2 NVMe.
+Linux driver built into kernel -- zero configuration.
+
+### Backplate View (slot area)
+```
+[PCI bracket    -- Row 1, Radeon/Voodoo]
+[blank plate    -- Row 2, trapdoor internal]
+[PCIe x8 bracket -- Row 3, GPU]
+[PCIe x4 bracket -- Row 4, expansion]
+```
+
+### Bus Domain Separation
+68030 domain: Row 1 PCI (via PLX PCI9052)
+CM4 domain:   Row 3 PCIe x8, Row 4 PCIe x4, M.2 NVMe
+No conflict -- completely independent buses.
