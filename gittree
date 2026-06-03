@@ -1,0 +1,388 @@
+.
+├── docs
+│   ├── CM4_OFFLOAD.md
+│   ├── CPU_RAM.md
+│   ├── DESIGN_NOTES.md
+│   ├── GPU_STRATEGY.md
+│   ├── HISTORY.md
+│   ├── IO_SPEC.md
+│   ├── KICAD_PLAN.md
+│   ├── KICAD_SYMBOLS.md
+│   ├── REFERENCES.md
+│   ├── TRANSPLANT.md
+│   └── VIDEO_ARCHITECTURE.md
+├── gittree
+├── README.md
+└── research
+    ├── amiga_chipset
+    ├── cm4
+    │   ├── BCM2711_peripherals.pdf
+    │   └── CM4_datasheet.pdf
+    ├── cpu_fpu
+    │   └── MC68030_UserManual.pdf
+    ├── DATASHEET_URLS.md
+    ├── fetch_datasheets.sh
+    ├── fetch_missing.sh
+    ├── gpu
+    ├── modern_ics
+    │   ├── 6N137.pdf
+    │   ├── ADV7513_Hardware_User_Guide.pdf
+    │   ├── adv7513.pdf
+    │   ├── ATmega324PB.pdf
+    │   ├── PCM1808.pdf
+    │   └── PCM5102A.pdf
+    └── reference_boards
+        ├── amiga-1200
+        │   ├── A1200+ (Auto Insert Testpoints).txt
+        │   ├── A1200.bmp
+        │   ├── A1200+ (BOM 2 Csv Sorted).csv
+        │   ├── A1200+ (BOM Csv).csv
+        │   ├── A1200+(CAMPlot).txt
+        │   ├── A1200+.dxf
+        │   ├── A1200+_Gerbers_Rev0.zip
+        │   ├── A1200+_Gerbers_Rev1.zip
+        │   ├── A1200+_Gerbers_Rev2.zip
+        │   ├── a1200mb_rev1d4.jpg
+        │   ├── A1200+.pcb
+        │   ├── A1200+.pdf
+        │   ├── A1200+ (Pick And Place Csv).csv
+        │   ├── A1200+ (Pick And Place).txt
+        │   ├── A1200PlusBackplate_A_rev0_Gerbers.zip
+        │   ├── A1200 Plus CORE.pcb
+        │   ├── A1200 Plus CORE.sch
+        │   ├── A1200Plus_Gerbers_Rev3.zip
+        │   ├── A1200Plus_Gerbers_Rev4.zip
+        │   ├── A1200Plus_Gerbers_Rev5.zip
+        │   ├── A1200Plus_Gerbers_Rev6.zip
+        │   ├── A1200+ (Replace Part Report).txt
+        │   ├── A1200+ Rev2 BOM.pdf
+        │   ├── A1200+ Rev2 Schematics.pdf
+        │   ├── A1200+.sch
+        │   ├── A1200+_Schematics_Rev0.pdf
+        │   ├── A1200+_Schematics_Rev3.pdf
+        │   ├── A1200+_Schematics_Rev5.pdf
+        │   ├── A1200+ Video Board Dimensions.pdf
+        │   ├── BackplateA(CAMPlot).txt
+        │   ├── BackplateA.dxf
+        │   ├── BackplateA.pcb
+        │   ├── Contour.gbr
+        │   ├── CPLD
+        │   │   ├── A1200Plus.xise
+        │   │   ├── amiga1200plus.jed
+        │   │   ├── amiga1200plus.prj
+        │   │   └── Amiga1200Plus.vhd
+        │   ├── cut-outs.gbr
+        │   ├── Firmware
+        │   │   └── Keyboard
+        │   │       ├── A1200PlusKeyboardController.atstart
+        │   │       ├── KeyboardController
+        │   │       │   ├── KeyboardController
+        │   │       │   │   ├── atmel_start.c
+        │   │       │   │   ├── atmel_start.h
+        │   │       │   │   ├── Config
+        │   │       │   │   │   ├── clock_config.h
+        │   │       │   │   │   └── RTE_Components.h
+        │   │       │   │   ├── Default.xml
+        │   │       │   │   ├── doxygen
+        │   │       │   │   │   ├── generator
+        │   │       │   │   │   │   ├── doxyfile.doxygen
+        │   │       │   │   │   │   └── DoxygenLayout.xml
+        │   │       │   │   │   ├── mainpage.dox
+        │   │       │   │   │   └── system.dox
+        │   │       │   │   ├── driver_isr.c
+        │   │       │   │   ├── include
+        │   │       │   │   │   ├── amigakb.h
+        │   │       │   │   │   ├── atmel_start_pins.h
+        │   │       │   │   │   ├── driver_init.h
+        │   │       │   │   │   ├── key_scan.h
+        │   │       │   │   │   ├── port.h
+        │   │       │   │   │   ├── protected_io.h
+        │   │       │   │   │   ├── sysctrl.h
+        │   │       │   │   │   └── system.h
+        │   │       │   │   ├── KeyboardController.componentinfo.xml
+        │   │       │   │   ├── KeyboardController.cproj
+        │   │       │   │   ├── main.c
+        │   │       │   │   ├── src
+        │   │       │   │   │   ├── amigakb.c
+        │   │       │   │   │   ├── driver_init.c
+        │   │       │   │   │   ├── key_scan.c
+        │   │       │   │   │   └── protected_io.S
+        │   │       │   │   └── utils
+        │   │       │   │       ├── assembler
+        │   │       │   │       │   ├── gas.h
+        │   │       │   │       │   └── iar.h
+        │   │       │   │       ├── assembler.h
+        │   │       │   │       ├── atomic.h
+        │   │       │   │       ├── compiler.h
+        │   │       │   │       ├── interrupt_avr8.h
+        │   │       │   │       ├── utils_assert.h
+        │   │       │   │       └── utils.h
+        │   │       │   └── KeyboardController.atsln
+        │   │       └── KeyboardController.atzip
+        │   ├── Images
+        │   │   ├── A1200+Render.png
+        │   │   └── AmigaBall.png
+        │   ├── JoyStickExpansion
+        │   │   ├── A1200+JoyStickExpansion-21092019.pcb
+        │   │   ├── A1200+JoyStickExpansion (BOM 2 Csv Sorted).csv
+        │   │   ├── A1200+JoyStickExpansion (DRC Errors Report).txt
+        │   │   ├── A1200+JoyStickExpansion.dxf
+        │   │   ├── A1200+JoyStickExpansion.pcb
+        │   │   ├── A1200+JoyStickExpansion Rev0 BOM.pdf
+        │   │   ├── A1200+JoystickExpansion Rev0 Gerbers.zip
+        │   │   ├── A1200+JoyStickExpansion Rev0 Schematics.pdf
+        │   │   ├── A1200+JoyStickExpansion (Router Report).txt
+        │   │   ├── A1200+JoyStickExpansion.sch
+        │   │   ├── A1200PlusJoyStickExpansion_Rev1_Gerbers.zip
+        │   │   ├── A1200PlusJoystickExpansion_Rev2_Gerbers.zip
+        │   │   ├── A1200PlusJoystickExpansion_Rev3_Gerbers.zip
+        │   │   ├── L1 - Copper Top.GTL.gbr
+        │   │   ├── L2 - Copper GND.G2L.gbr
+        │   │   ├── L3 - Copper Power.G3L.gbr
+        │   │   ├── L4 - Copper Bottom.GBL.gbr
+        │   │   ├── Outline.GKO.gbr
+        │   │   ├── Silkscreen Bottom.GBO.gbr
+        │   │   ├── Silkscreen Top.GTO.gbr
+        │   │   ├── Solder Mask Bottom.GBS.gbr
+        │   │   ├── Solder Mask Top.GTS.gbr
+        │   │   ├── Through Hole.drl
+        │   │   └── Through Hole Unplated.drl
+        │   ├── L1 - Copper Top.gtl.gbr
+        │   ├── L2 - Copper GND.g2l.gbr
+        │   ├── L3 - Copper Inner A.g3l.gbr
+        │   ├── L4 - Copper Inner B.g4l.gbr
+        │   ├── L5 - Copper Power.g5l.gbr
+        │   ├── L6 - Copper Bottom.gbl.gbr
+        │   ├── Outline.gko.gbr
+        │   ├── output
+        │   │   └── A1200+(CAMPlot).zip
+        │   ├── Production Info.gbr
+        │   ├── RamBo Connections.xlsx
+        │   ├── RamBoDimensions.pdf
+        │   ├── RamExpansion
+        │   │   ├── RamBo 1Mx4
+        │   │   │   ├── L1 - Copper Top.GTL.gbr
+        │   │   │   ├── L2 - Copper GND.G2L.gbr
+        │   │   │   ├── L3 - Copper Power.G3L.gbr
+        │   │   │   ├── L4 - Copper Bottom.GBL.gbr
+        │   │   │   ├── Outline.GKO.gbr
+        │   │   │   ├── RamBo 1Mx4(CAMPlot).txt
+        │   │   │   ├── RamBo 1Mx4 (DRC Errors Report).txt
+        │   │   │   ├── RamBo 1Mx4.pcb
+        │   │   │   ├── RamBo 1Mx4.pdf
+        │   │   │   ├── RamBo 1Mx4 Rev0 BOM.pdf
+        │   │   │   ├── RamBo 1Mx4 Rev0 Gerbers.zip
+        │   │   │   ├── RamBo 1Mx4 Rev0 Schematics.pdf
+        │   │   │   ├── RamBo 1Mx4 Rev1 Gerbers.zip
+        │   │   │   ├── RamBo 1Mx4 Rev2 Gerbers.zip
+        │   │   │   ├── RamBo 1Mx4 Rev3 Gerbers.zip
+        │   │   │   ├── RamBo 1Mx4 (Router Report).txt
+        │   │   │   ├── RamBo 1Mx4.sch
+        │   │   │   ├── Silkscreen Bottom.GBO.gbr
+        │   │   │   ├── Silkscreen Top.GTO.gbr
+        │   │   │   ├── Solder Mask Bottom.GBS.gbr
+        │   │   │   ├── Solder Mask Top.GTS.gbr
+        │   │   │   ├── Through Hole.drl
+        │   │   │   └── Through Hole Unplated.drl
+        │   │   ├── RamBo 256Kx16
+        │   │   │   ├── RamBo 256Kx16 Gerber Files Rev0.zip
+        │   │   │   ├── RamBo 256Kx16.pcb
+        │   │   │   └── RamBo 256Kx16.sch
+        │   │   └── RamBo Debug
+        │   │       ├── RamboDebug.pcb
+        │   │       ├── RamboDebug_rev0_Gerbers.zip
+        │   │       └── RamboDebug.sch
+        │   ├── README.md
+        │   ├── Silkscreen Bottom.gbo.gbr
+        │   ├── Silkscreen Top.gbr
+        │   ├── Silkscreen Top.gto.gbr
+        │   ├── Solder Mask Bottom.gbs.gbr
+        │   ├── Solder Mask Top.gts.gbr
+        │   ├── Through Hole Plated.drl
+        │   ├── Through Hole Unplated.drl
+        │   ├── Top.gbr
+        │   ├── Top Solder Mask.gbr
+        │   └── VideoExpansion
+        │       ├── SimpleRGBBoard
+        │       │   ├── A1200+SimpleRGBBoard (BOM 2 Csv Sorted).csv
+        │       │   ├── A1200+SimpleRGBBoard(CAMPlot).txt
+        │       │   ├── A1200+SimpleRGBBoard (DRC Errors Report).txt
+        │       │   ├── A1200+SimpleRGBBoard.pcb
+        │       │   ├── A1200+SimpleRGBBoard (Router Report).txt
+        │       │   ├── A1200+SimpleRGBBoard.sch
+        │       │   ├── L1 - Copper Top.GTL.gbr
+        │       │   ├── L2 - Copper GND.G2L.gbr
+        │       │   ├── L3 - Copper Power.G3L.gbr
+        │       │   ├── L4 - Copper Bottom.GBL.gbr
+        │       │   ├── Outline.GKO.gbr
+        │       │   ├── RGBBoard_Rev1_Gerbers.zip
+        │       │   ├── RGBBoard_Rev2_Gerbers.zip
+        │       │   ├── Silkscreen Bottom.GBO.gbr
+        │       │   ├── Silkscreen Top.GTO.gbr
+        │       │   ├── SimpleRGBBoard Rev0 BOM.pdf
+        │       │   ├── SimpleRGBBoard Rev0 Gerbers.zip
+        │       │   ├── SimpleRGBBoard Rev0 Schematics.pdf
+        │       │   ├── Solder Mask Bottom.GBS.gbr
+        │       │   ├── Solder Mask Top.GTS.gbr
+        │       │   ├── Test.zip
+        │       │   ├── Through Hole Plated.drl
+        │       │   └── Through Hole Unplated.drl
+        │       └── ZZ1200
+        │           ├── ZZ1200.pcb
+        │           ├── ZZ1200 (Router Report).txt
+        │           └── ZZ1200.sch
+        └── Raemixx500
+            ├── 3dModels
+            │   ├── BS-7.STEP
+            │   ├── DSN6.FCStd
+            │   ├── DSN6.step
+            │   ├── DSS6.FCStd
+            │   ├── DSS6.step
+            │   ├── ferrite-bead-vertical.wrl
+            │   ├── ferrite_bead.wrl
+            │   └── PJRAN1X1U01X--3DModel-STEP-56544.stp
+            ├── audio.sch
+            ├── cias.sch
+            ├── clockdist.sch
+            ├── cpu.sch
+            ├── doc
+            │   ├── dimensions1.jpg
+            │   ├── dimensions2.jpg
+            │   ├── dimensions3.jpg
+            │   ├── Laird-CM4545Z131B-10-datasheet.pdf
+            │   ├── power_conn_replacement.pdf
+            │   └── rs_din8.pdf
+            ├── expansion.sch
+            ├── floppy.sch
+            ├── fp-lib-table
+            ├── img
+            │   ├── render-bottom.png
+            │   ├── render-top.png
+            │   └── social.png
+            ├── libs
+            │   ├── 68000D.dcm
+            │   ├── 68000D.lib
+            │   ├── 74ls157.dcm
+            │   ├── 74ls157.lib
+            │   ├── 74ls244.dcm
+            │   ├── 74ls244.lib
+            │   ├── 74ls245.dcm
+            │   ├── 74ls245.lib
+            │   ├── 74ls258.dcm
+            │   ├── 74ls258.lib
+            │   ├── 74ls373.dcm
+            │   ├── 74ls373.lib
+            │   ├── AMIGA_ROM.dcm
+            │   ├── AMIGA_ROM.lib
+            │   ├── amipower.dcm
+            │   ├── amipower.lib
+            │   ├── BUSEXP.dcm
+            │   ├── BUSEXP.lib
+            │   ├── db23_male_mountingholes.dcm
+            │   ├── db23_male_mountingholes.lib
+            │   ├── db23_mountingholes_2sides.dcm
+            │   ├── db23_mountingholes_2sides.lib
+            │   ├── db25_female_mountingholes.dcm
+            │   ├── db25_female_mountingholes.lib
+            │   ├── db25_male_mountingholes.dcm
+            │   ├── db25_male_mountingholes.lib
+            │   ├── db9_male_mountingholes.dcm
+            │   ├── db9_male_mountingholes.lib
+            │   ├── DENISE.dcm
+            │   ├── DENISE.lib
+            │   ├── Dispatcher.dcm
+            │   ├── Dispatcher.lib
+            │   ├── DT1042.lib
+            │   ├── emi_filter_lcl_small.dcm
+            │   ├── emi_filter_lcl_small.lib
+            │   ├── FAT_AGNUS_8375.dcm
+            │   ├── FAT_AGNUS_8375.lib
+            │   ├── GARY.dcm
+            │   ├── GARY.lib
+            │   ├── Jumper_3_Bridged23.dcm
+            │   ├── Jumper_3_Bridged23.lib
+            │   ├── keyboard.dcm
+            │   ├── keyboard.lib
+            │   ├── linefilter.dcm
+            │   ├── linefilter.lib
+            │   ├── MC1488.dcm
+            │   ├── MC1488.lib
+            │   ├── mc1489.dcm
+            │   ├── mc1489.lib
+            │   ├── MSM6242B.dcm
+            │   ├── MSM6242B.lib
+            │   ├── ne555.dcm
+            │   ├── ne555.lib
+            │   ├── NEC_424260.lib
+            │   ├── PAULA.dcm
+            │   ├── PAULA.lib
+            │   ├── PJRAN1X1U01X.lib
+            │   ├── r_pack05.dcm
+            │   ├── r_pack05.lib
+            │   ├── TRAPDOOR.lib
+            │   ├── VIA_8520.dcm
+            │   ├── VIA_8520.lib
+            │   ├── VIDIOT.dcm
+            │   ├── VIDIOT.lib
+            │   ├── void.lib
+            │   ├── xtal.dcm
+            │   ├── xtal.lib
+            │   ├── XX4256.dcm
+            │   └── XX4256.lib
+            ├── logo
+            │   ├── Raemixx500_2.png
+            │   ├── Raemixx500_3.png
+            │   ├── Raemixx500.eps
+            │   ├── Raemixx500.pdf
+            │   └── Raemixx500.png
+            ├── power.sch
+            ├── Raemixx500-cache.lib
+            ├── Raemixx500.kicad_pcb
+            ├── Raemixx500.net
+            ├── Raemixx500.pretty
+            │   ├── A2000_COPRO_SLOT.kicad_mod
+            │   ├── A500_SIDE_CONNECTOR.kicad_mod
+            │   ├── Battery_Holder_Coin_2032_BS-7.kicad_mod
+            │   ├── C_Axial_L6.3mm_D2.5mm_P10.16mm.kicad_mod
+            │   ├── C_Axial_L9.0mm_D3.2mm_P12.70mm.kicad_mod
+            │   ├── cc_by_nc_sa.kicad_mod
+            │   ├── CM4545Z131B-10.kicad_mod
+            │   ├── Crystal_RTC.kicad_mod
+            │   ├── DB_23F.kicad_mod
+            │   ├── DB_23M.kicad_mod
+            │   ├── DB_25F.kicad_mod
+            │   ├── DB_25M.kicad_mod
+            │   ├── DB_9M.kicad_mod
+            │   ├── DriveSwitchHeader.kicad_mod
+            │   ├── DS215+DIN8_COMBO.kicad_mod
+            │   ├── EMI_Filter_Longer.kicad_mod
+            │   ├── EMI_Filter_Long.kicad_mod
+            │   ├── EMI_Filter_Short.kicad_mod
+            │   ├── Ferrite_Axial_L9.0mm_D3.2mm_P12.70mm.kicad_mod
+            │   ├── Jumper2-Bridged.kicad_mod
+            │   ├── Jumper2-Open.kicad_mod
+            │   ├── Jumper3-Bridged12.kicad_mod
+            │   ├── Jumper3-Bridged23.kicad_mod
+            │   ├── Jumper3-Open.kicad_mod
+            │   ├── Keyboard_Connector.kicad_mod
+            │   ├── LineFilter.kicad_mod
+            │   ├── Logo.kicad_mod
+            │   ├── power_ami+din5.kicad_mod
+            │   ├── R_Axial_DIN0309_L9.0mm_D3.2mm_P12.70mm_Horizontal.kicad_mod
+            │   ├── SOT-23_LongerPads.kicad_mod
+            │   ├── SWITCHCRAFT_PJRAN1X1U01X.kicad_mod
+            │   ├── Trapdoor.kicad_mod
+            │   ├── TSOP-6_Handsolder.kicad_mod
+            │   └── VariCap.kicad_mod
+            ├── Raemixx500.pro
+            ├── Raemixx500.sch
+            ├── ram.sch
+            ├── README.md
+            ├── rom.sch
+            ├── rtc.sch
+            ├── sym-lib-table
+            ├── terminators.sch
+            ├── trapdoor.sch
+            └── video.sch
+
+39 directories, 347 files
