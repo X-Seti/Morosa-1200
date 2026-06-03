@@ -17,9 +17,14 @@
     ├── amiga_chipset
     ├── cm4
     │   ├── BCM2711_peripherals.pdf
-    │   └── CM4_datasheet.pdf
+    │   ├── CM4_datasheet.pdf
+    │   └── CM4 IO board.pdf
     ├── cpu_fpu
-    │   └── MC68030_UserManual.pdf
+    │   ├── MC68030_UserManual.pdf
+    │   ├── MC68060RC50.pdf
+    │   ├── MC68882.pdf
+    │   └── Z80-CPU.pdf
+    ├── CY7C132.pdf
     ├── DATASHEET_URLS.md
     ├── fetch_datasheets.sh
     ├── fetch_missing.sh
@@ -231,6 +236,8 @@
         │           ├── ZZ1200.pcb
         │           ├── ZZ1200 (Router Report).txt
         │           └── ZZ1200.sch
+        ├── PCI9052.pdf
+        ├── PEX8606.pdf
         └── Raemixx500
             ├── 3dModels
             │   ├── BS-7.STEP
@@ -385,4 +392,4 @@
             ├── trapdoor.sch
             └── video.sch
 
-39 directories, 347 files
+39 directories, 354 files
