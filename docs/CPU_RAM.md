@@ -1,146 +1,196 @@
-# X-Seti - May 2026 - Morosa-1200 - CPU, RAM and Expansion
+# X-Seti - June 2026 - Morosa-1200 - CPU, RAM and Expansion
 
 """
-CPU_RAM.md - CPU choice, RAM configuration, trapdoor expansion,
-and ARM co-processor strategy for Morosa-1200.
+CPU_RAM.md - CPU choice, RAM configuration, expansion strategy.
+Covers 68030 onboard, 68882 FPU, SIMM sockets, CM4 LPDDR4
+extension, Tube Port, and trapdoor expansion.
 """
 
-## Onboard CPU
+## Onboard CPU -- MC68030
 
-### Decision: 68030 (full, not EC variant)
+### Decision: 68030 socketed on mainboard
 
-The stock A1200 68EC020 has a 24-bit address bus - 16MB maximum addressable
-memory regardless of physical RAM. The full 68030 resolves this:
+| Property      | 68EC020 (stock) | 68020 (full) | 68030 (chosen) |
+|---------------|-----------------|--------------|----------------|
+| Address bus   | 24-bit (16MB)   | 32-bit (4GB) | 32-bit (4GB)   |
+| MMU           | No              | No (ext)     | Yes (built-in) |
+| FPU           | No              | No           | No (ext 68882) |
+| I+D cache     | No              | I only       | Yes both       |
+| Max clock     | 14MHz (stock)   | 33MHz        | 50MHz          |
+| Package       | PLCC-68         | PLCC-68      | QFP-132        |
 
-| Property       | 68EC020 (stock) | 68020 (full) | 68030 (chosen) |
-|----------------|-----------------|--------------|----------------|
-| Address bus    | 24-bit (16MB)   | 32-bit (4GB) | 32-bit (4GB)   |
-| MMU            | No              | No (ext 68851)| Yes (built-in) |
-| FPU            | No              | No           | No (ext 68882) |
-| I+D cache      | No              | I only       | Yes both       |
-| Max clock      | 14MHz (A1200)   | 33MHz        | 50MHz          |
-| Package        | PLCC-68         | PLCC-68      | QFP-132        |
+68030 is socketed -- not soldered -- for replaceability.
+68020 (full) is acceptable fallback if 68030 hard to source.
+Same QFP-132 socket, 32-bit address bus.
 
-The 68020 (full) is an acceptable fallback if 68030 is hard to source.
-Same PLCC-68 package, same 32-bit address bus, no built-in MMU.
+### Why Not 68040/060 Onboard?
+68040/060 run hot, need heatsink/fan.
+They come on trapdoor accelerators WITH their own RAM.
+Putting 040/060 onboard conflicts with trapdoor slot.
+The trapdoor IS the 040/060 upgrade path.
+Tube Port cards are secondary CPUs, not CPU replacements.
 
-### Onboard FPU - 68882 at U0
-The A1200 always had an unpopulated FPU footprint at U0.
-Morosa-1200 populates it with a 68882 PLCC-52 socket.
+### Onboard FPU -- 68882 at U0
+A1200 always had unpopulated FPU footprint at U0.
+Morosa-1200 populates it with PLCC-52 socket.
+User fits 68882 chip when available (£5-15 eBay).
+Disabled automatically when 040/060 trapdoor card present
+(040/060 have integral FPU -- two FPUs conflict).
 Independent clock crystal option for async FPU operation.
-Disabled automatically when 040/060 trapdoor card is present.
 
 ---
 
-## RAM
+## RAM Architecture
 
-### Chip RAM - Alice hard limit
-Alice (AGA) addresses a maximum of 2MB Chip RAM. Silicon constraint, not CPU.
-- 1x 72-pin SIMM socket
-- 2MB SIMM fitted as standard
-- No benefit to larger SIMM
+### Chip RAM -- Alice hard silicon limit
+Alice (AGA) addresses maximum 2MB Chip RAM.
+This is a silicon constraint -- not CPU, not board.
+```
+1x 72-pin SIMM socket
+2MB SIMM fitted as standard
+No benefit to larger SIMM
+Alice DMA reads this directly
+68030 and AGA chipset share it
+```
 
-### Fast RAM - onboard
-With 32-bit CPU the full Fast RAM address space is accessible.
-- 2x 72-pin SIMM sockets
-- Accepts 1MB, 4MB, or 8MB SIMMs per socket
-- Maximum onboard: 2x 8MB = 16MB Fast RAM
-- Must be: 32-bit wide (1Mx32 or 1Mx36), 70-80ns, non-EDO, single-sided
-- EDO RAM NOT supported by AGA memory controller
+### Fast RAM -- onboard SIMMs
+With 32-bit 68030 CPU the full Fast RAM space is accessible.
+```
+2x 72-pin SIMM sockets
+Accepts 1MB, 4MB, or 8MB SIMMs per socket
+Maximum onboard: 2x 8MB = 16MB Fast RAM
+Must be: 32-bit wide (1Mx32 or 1Mx36)
+         70-80ns access time
+         Non-EDO
+         Single-sided preferred
+EDO RAM NOT supported by AGA memory controller
+```
 
-### Extended RAM - trapdoor accelerator
-Trapdoor cards provide their own Fast RAM on a separate local bus:
-- TF1230 / TF1260: 128MB
-- ACA1233n: 128MB
-- PiStorm32-Lite (EMU68): up to 256MB from RPi physical RAM
+### Why Keep SIMMs?
+Board must work without CM4 (out of the box principle).
+Alice needs Chip RAM physically present on her bus.
+68030 needs Fast RAM to boot AmigaOS.
+72-pin SIMMs still available (eBay, retro suppliers, NOS).
+CM4 LPDDR4 extends Fast RAM when CM4 is fitted -- additive.
+Future: if SIMMs unavailable, FPGA bridges SDRAM chips instead.
 
-Total possible: 2MB chip + 16MB onboard fast + 128-256MB accelerator
+### Extended Fast RAM -- CM4 LPDDR4 (when CM4 fitted)
+```
+CM4 module has 1-8GB LPDDR4 (depends on module)
+FPGA carves a slice for 68030 use:
+  512MB-1GB mapped as additional Fast RAM
+  68030 local bus access via FPGA bridge
+  Extends onboard SIMMs transparently
+  AmigaOS sees it as standard Fast RAM
+  No software changes needed
+
+CM4 LPDDR4 allocation:
+  Amiga Fast RAM slice: 512MB-1GB
+  Linux system RAM: remainder
+  GPU buffers: from Linux portion
+```
+
+### Trapdoor Fast RAM
+```
+Accelerator cards bring own RAM:
+  TF1230/TF1260: up to 128MB
+  ACA1233n: up to 128MB
+  PiStorm32-Lite: up to 256MB (Pi's RAM)
+Direct 68030 local bus on accelerator card
+```
+
+### Total RAM Summary
+```
+Chip RAM:        2MB (Alice, fixed forever)
+Fast RAM SIMM:   16MB (onboard, always present)
+Fast RAM CM4:    512MB-1GB (when CM4 fitted)
+Fast RAM trap:   128-256MB (trapdoor accelerator)
+CM4 system:      1-8GB LPDDR4 (Linux, CM4 owned)
+GPU VRAM:        12GB GDDR6 (RX 5900 XT, CM4 owned)
+Dual-port SRAM:  1-4MB (BBC Tube comms window)
+
+Total 68030 accessible:
+  2MB + 16MB + 1GB + 256MB = ~1.3GB realistic max
+```
 
 ---
 
-## ARM Co-processor - CM4 (BCM2711)
+## Tube Port -- Co-processor CPU Cards
 
-### Decision: BCM2711 wins
+The Tube Port is Morosa-1200's secondary CPU expansion.
+Inspired by BBC Micro Tube interface (1982).
+68030 is the host. Cards are co-processors.
+Both run simultaneously. Neither replaces the other.
 
-Evaluated: BCM2711, RK3588S, BCM2712, CIX CD8180
+```
+Physical: small edge connector, internal, 80-pin
+Default:  empty socket
+Cards:    Z80, 6502, FPGA soft CPU, 8086 etc
+FPGA:     detects card via SPI EEPROM
+          loads appropriate translation core
+          bridges card CPU bus to Amiga bus
 
-BCM2711 selected because:
-- Direct CPU GPIO - no PCIe hop
-- PiStorm32 proven at 32MB/s on this exact chip
-- Matches 68030 bus throughput target
-- Mature kernel, widest community
-- CM4 module - socketed and swappable
-- Developer owns RPi4B today for firmware work
+Z80 card:   CP/M 2.2/3.0, BBC Z80 Tube ROMs
+6502 card:  BBC BASIC, Apple II style
+FPGA card:  any soft CPU (iCE40, open toolchain)
+ARM card:   bare Cortex-M, real-time tasks
+```
 
-### GPIO Bandwidth
-68030 at 50MHz, 32-bit bus: 200MB/s theoretical, 20-40MB/s sustained real world.
-BCM2711 direct GPIO: 25-32MB/s sustained. Target met.
-
-Both BCM2711 and RK3588S hit the same GPIO ceiling (~50MHz toggle rate).
-BCM2711 wins on proven firmware, not raw speed.
-
-### CM4 Socket
-Standard 200-pin CM4 high-density connector.
-Accepts: CM4 (BCM2711) now, Radxa CM5 (RK3588S) when firmware matures.
-No board respin needed to upgrade ARM module.
-
-### Communication - Dual-port SRAM (BBC Tube model)
-- IDT70V24 or CY7C136 dual-port SRAM, 1-4MB
-- 68030 and CM4 both have direct access to shared window
-- BBC Tube-style message passing - no shared OS needed
-- CM4 can interrupt 68030 via _INT2 or _INT6
-- AmigaOS sees CM4 as device via Autoconfig-style probe
-
-### 40-pin GPIO Header
-- RPi-compatible pinout
-- Direct BCM2711 GPIO - low latency
-- Standard RPi HATs compatible
-- Amiga-accessible pins via level shifter (5V to 3.3V)
-- Linux-owned pins for standard peripherals
+Full specification: docs/TUBE_PORT_SPEC.md
 
 ---
 
 ## Trapdoor Expansion Connector
 
-Standard A1200 150-pin edge connector (0.05-inch pitch, dual row).
-Sources: retroready.one (UK), amigastore.eu (EU), Sordan (Ireland).
+Standard A1200 150-pin edge connector, 90 degree upright.
+All 32 address lines routed (A24-A31 live, unlike original).
+Full 32-bit bus -- all accelerators work correctly.
 
-Morosa-1200 routes all 32 address lines to trapdoor connector.
-Original A1200 left A24-A31 unconnected (EC020 limitation).
-With 68030 onboard all 32 lines are live - full accelerator compatibility.
+```
+Compatible accelerators:
+  TF1230  68030 @ 50MHz, 128MB Fast RAM
+  TF1260  68060 @ 50MHz, 128MB Fast RAM
+  ACA1233n 68030 @ 25-40MHz, 128MB
+  Apollo 060 68060 @ 50MHz
+  PiStorm32-Lite RPi, EMU68 68040, 256MB
 
-### Compatible Accelerators
-- TF1230  - 68030 @ 50MHz, 128MB Fast RAM
-- TF1260  - 68060 @ 50MHz, 128MB Fast RAM
-- ACA1233n - 68030 @ 25-40MHz, 128MB Fast RAM
-- Apollo 060 - 68060 @ 50MHz
-- PiStorm32-Lite - RPi3A+/Pi4/CM4, EMU68 68040, 256MB
-
-### PiStorm32-Lite on Trapdoor
-The PiStorm32-Lite plugs into the standard trapdoor connector.
-Uses BCM2711 (Pi4) running EMU68 to emulate a 68040 at 2000+ MIPS.
-Open source hardware: github.com/PiStorm/pistorm32-lite-hardware
-Note: Morosa-1200 already has onboard CM4, so PiStorm32 trapdoor use
-would be secondary to the onboard ARM - confirm no bus conflict before use.
-
-### Open Sockets on Trapdoor
-- Full 32-bit 68030 address/data bus
-- CM4 GPIO/SPI/I2C breakout header
-- +5V, +3.3V, GND power pins
-- 68030 clock and ARM peripheral clock
-- Interrupt lines to both CPUs
-- Unpopulated FPGA/CPLD footprint pads (iCE40 or XC9572XL)
+PiStorm32-Lite note:
+  Morosa-1200 has onboard CM4 already.
+  PiStorm32 via trapdoor = second ARM alongside CM4.
+  Confirm no bus conflict before use.
+  Both provide different functions -- possible to coexist.
+```
 
 ---
 
-## Summary
+## CPU Upgrade Path Summary
 
-| Component      | Choice                          | Reason                         |
-|----------------|---------------------------------|--------------------------------|
-| Onboard CPU    | 68030 QFP-132 @ 50MHz           | 32-bit, MMU, cache, fast       |
-| Onboard FPU    | 68882 PLCC-52 socket at U0      | Always designed in, now fitted |
-| Chip RAM       | 1x 72-pin SIMM, 2MB             | Alice hard limit               |
-| Fast RAM       | 2x 72-pin SIMM, max 16MB        | 32-bit CPU unlocks full space  |
-| ARM co-proc    | CM4 socket, BCM2711             | Proven 32MB/s, PiStorm done    |
-| Communication  | Dual-port SRAM                  | BBC Tube model, deterministic  |
-| Trapdoor       | Full 32-bit, all A lines, open  | All accelerators, future proof |
+```
+Base (out of box):
+  68030 @ 50MHz onboard (socketed)
+  68882 FPU socket (empty, fit when ready)
+  GD5446 RTG onboard
+  16MB Fast RAM via SIMMs
+  Works as enhanced A1200
+
+Step 1 -- Add 68882:
+  Fit chip into U0 socket
+  Hardware FPU for LightWave, flight sims
+  £5-15, plug in, done
+
+Step 2 -- Add CM4:
+  Fit CM4 module into 200-pin socket
+  USB, GbE, HDMI 2, extended Fast RAM
+  Modern I/O services come online
+
+Step 3 -- Add Tube card:
+  Fit Z80/6502/FPGA card into Tube Port
+  Secondary CPU runs alongside 68030
+  BBC Tube philosophy fulfilled
+
+Step 4 -- Add trapdoor accelerator:
+  TF1260 or PiStorm32 in trapdoor
+  68060 @ 75MHz or ARM 2GHz
+  Main CPU upgrades massively
+  68882 on mainboard deactivated automatically
+```

@@ -1,126 +1,188 @@
-# X-Seti - May 2026 - Morosa-1200 - Design Notes
+# X-Seti - June 2026 - Morosa-1200 - Design Notes
 
 """
-DESIGN_NOTES.md - Architecture decisions and rationale for Morosa-1200.
-Records why each design choice was made, open questions, and alternatives considered.
+DESIGN_NOTES.md - Architecture decisions and rationale.
+Records why each design choice was made, alternatives considered,
+and open questions. Updated as decisions are finalised.
 """
+
+## Core Philosophy
+
+Morosa-1200 is built on BBC Micro Tube co-processor philosophy.
+The 68030 is the host CPU (BBC 6502 equivalent).
+The CM4 and Tube Port cards are co-processors (BBC ARM/Z80 equivalent).
+The AGA chipset is the soul -- preserved, authentic, real silicon.
+
+Every design decision flows from three principles:
+1. Works out of the box without CM4 or any expansion
+2. Expands gracefully -- each addition improves without breaking
+3. Community friendly -- open standard, forkable, documented
+
+---
 
 ## Architecture Decisions
 
 ### Why Real Chips?
-The Morosa-1200 uses transplanted original AGA silicon rather than FPGA emulation.
-The AGA chipset has nuances in timing, DMA behaviour, and analogue output that
-FPGA cores still do not fully replicate. For a board built around a donor machine,
-keeping the real chips is both practical and philosophically correct.
+Transplanted original AGA silicon rather than FPGA emulation.
+AGA has nuances in timing, DMA, and analogue output that FPGA
+cores still do not fully replicate. For a board built around a
+donor machine, keeping the real chips is philosophically correct.
+The Amiga soul must be real.
 
 ### Why Mini-ITX?
-170x170mm fits in any modern case, supports standard ATX PSU, and is large enough
-to accommodate the AGA chipset footprint plus modern I/O without heroic routing.
-The Alicia 1200 project has already proven Mini-ITX is viable for AGA.
+170x170mm fits any modern case, supports ATX PSU, large enough
+for AGA chipset plus modern I/O. Alicia 1200 proved Mini-ITX
+is viable for AGA. Standard cases are cheap and available.
+
+### Why BBC Tube Architecture?
+The BBC Micro Tube (1982) proved that a co-processor can extend
+a host computer without replacing it. 68030 runs AmigaOS natively.
+CM4 handles all modern I/O services. Tube Port cards add secondary
+CPUs. Each layer adds capability without breaking the layer below.
+This is the correct architecture for Morosa-1200's goals.
+
+### Out of the Box First
+The board must work as a standalone enhanced A1200 without CM4.
+CM4 is an enhancement, not a requirement. This means:
+- 72-pin SIMMs for RAM (real Amiga hardware)
+- GD5446 onboard for RTG (works without CM4)
+- ADV7513 HDMI from Lisa (works without CM4)
+- All AGA functions work without CM4
 
 ### Why 68030 Not 68EC020?
-The 68EC020 (stock A1200 CPU) has only a 24-bit address bus - 16MB maximum
-regardless of RAM installed. The full 68030 gives:
-- 32-bit address bus (4GB addressable)
-- Built-in MMU (no external 68851 needed)
-- Instruction and data cache (vs 68020 instruction only)
-- Up to 50MHz
-- Pin-compatible upgrade path from 68020
+The 68EC020 (stock A1200) has only a 24-bit address bus -- 16MB max.
+The full 68030 gives 32-bit address bus (4GB), built-in MMU,
+instruction AND data cache, up to 50MHz. The 68020 (full, not EC)
+is an acceptable fallback -- same PLCC-68, same 32-bit address bus,
+but no built-in MMU.
 
-The 68020 (full, not EC) is an acceptable fallback - same PLCC-68 package,
-same 32-bit address bus, no built-in MMU but cheaper and easier to source.
+### 68030 Socketed on Mainboard + Tube Port Empty
+The 68030 is socketed directly on the mainboard -- it is the host CPU.
+The Tube Port socket is empty by default.
+Tube Port cards add co-processor CPUs alongside the 68030.
+They do not replace it.
+This matches the original BBC Micro model exactly.
 
-### Why CM4 (BCM2711) for the ARM co-processor?
-Decision made after evaluating: BCM2711 (RPi4/CM4), RK3588S (OPi5c/5Plus),
-BCM2712 (RPi5), CIX CD8180 (OPi6 Plus).
+### Why GD5446 for Onboard RTG?
+PQFP package -- hand solderable, no BGA risk.
+CGX and P96 driver support confirmed.
+16MB VRAM with 8x 2MB VRAM chips:
+  1920x1080x32bit = 7.91MB -- fits
+  1920x1080x32bit + double buffer = 15.82MB -- fits
+Honest 2D chip -- no pretend 3D.
+Works completely without CM4.
+Available as new old stock.
 
-BCM2711 wins because:
-- Direct CPU GPIO - no PCIe hop (unlike RPi5 which goes via RP1)
-- PiStorm32 already proven at 32MB/s on this exact chip
+S3 Virge/VX (from donor CV64/3D) rejected for mainboard:
+  BGA-288 package -- too risky for first board spin
+  Moved to Phase 2 GPU daughter board
+  RV350 replaces it on daughter board anyway
+
+### Why CM4 (BCM2711) for ARM Co-processor?
+Evaluated: BCM2711, RK3588S, BCM2712, CIX CD8180.
+BCM2711 wins:
+- Direct CPU GPIO -- no PCIe hop (unlike RPi5 RP1)
+- PiStorm32 proven at 32MB/s on this exact chip
 - Mature kernel, widest community, most drivers
-- CM4 module format - socketed, swappable, upgradeable
-- Developer owns RPi4B for firmware development today
+- CM4 module format -- socketed, swappable
+- Developer owns RPi4B for firmware development
 
-RK3588S (OPi5c) was second choice - also direct GPIO, faster CPU, but
-PiStorm-style firmware not yet ported. CM4 socket accepts future RK3588S
-module (Radxa CM5) when firmware matures - no board respin needed.
+RK3588S (OPi5c) -- second choice, same direct GPIO, faster,
+but PiStorm-style firmware not yet ported.
+CM4 socket accepts Radxa CM5 (RK3588S) when firmware matures.
 
-RPi5 (BCM2712) rejected - GPIO goes via PCIe to RP1 south bridge.
-Higher latency, not cycle-accurate for 68k bus interface.
+### Why 72-pin SIMMs for Base RAM?
+Base machine must work without CM4.
+Alice needs Chip RAM physically present on her bus.
+68030 needs Fast RAM to run AmigaOS.
+72-pin SIMMs are still available (eBay, retro suppliers).
+CM4 LPDDR4 extends Fast RAM when CM4 is fitted.
+SIMMs remain as base -- CM4 is additive, not replacement.
 
-OPi6 Plus (CIX CD8180) rejected - immature kernel, early-adopter drivers,
-too risky alongside PCB bring-up.
+### Why 16MB VRAM on GD5446?
+1920x1080x32bit = 7.91MB
+1920x1080x32bit + double buffer = 15.82MB
+16MB gives comfortable 1080p 32-bit with double buffering.
+8MB only covers 1080p 32-bit without double buffering.
+16MB = 8x 2MB VRAM chips -- achievable, documented, working.
 
-### The BBC Tube Architecture
-The co-processor communication model is borrowed from the BBC Micro Tube interface.
-The Tube used a small FIFO register set between the 6502 host and co-processor.
-Neither CPU shared the other's RAM - they passed messages.
+### Dual HDMI Outputs
+HDMI 1: Lisa → ADV7513 → HDMI (AGA native, no CM4 needed)
+HDMI 2: CM4 BCM2711 native HDMI (RTG, when CM4 fitted)
+Both independent, both simultaneous.
+HDMI 1 works without CM4 -- critical for out-of-box use.
+ADV7513 I2C configured by CM4 when present, has sensible
+defaults when CM4 absent (no I2C configuration needed for
+basic AGA output).
 
-On Morosa-1200:
-- Dual-port SRAM replaces the Tube ULA FIFO
-- 68030 and CM4 both have a window into the same physical SRAM
-- AmigaOS sees the CM4 as an accelerator/device via Autoconfig probe
-- CM4 can interrupt 68030 via _INT2 or _INT6
-- CM4 handles all modern I/O - AmigaOS never touches USB/Ethernet/NVMe directly
-- AmigaOS calls stub libraries that pass requests to CM4 transparently
+### Why Drop Parallel Port?
+PCM1808 ADC replaces parallel port sampling -- better in
+every metric (24-bit vs 8-bit, hardware vs software, stereo
+vs mono). All other parallel port use cases covered by CM4.
 
-Key insight from BBC Tube: the co-processor wins not because it is faster,
-but because it has uncontended RAM. The 68030 loses cycles to AGA DMA.
-The CM4 runs on its own DDR4 with zero bus contention.
+### Why Keep DB9 Joystick Ports?
+CIA potentiometer inputs have no USB equivalent.
+Megadrive/Genesis pads are pin compatible, still manufactured.
+Connector is tiny -- negligible board space.
+Authentic Amiga gaming experience preserved.
 
-### Video Path
-Lisa outputs a parallel digital RGB bus (8-bit per channel on AGA).
-This bus is exposed on an internal header feeding:
-- Onboard scan doubler (15kHz to 31kHz) for VGA output
-- HDMI transmitter IC (SiI9022A or ADV7513) for digital HDMI
-- RGB Mini-DIN (PS2/PS3 style connector) for direct analogue RGB
+### Expansion Slot Layout
+Row 1: PCI (68030 owned via PLX PCI9052) -- Radeon/Voodoo3
+Row 2: Trapdoor (68030 bus, offset, no backplate) -- accelerators
+Row 3: PCIe x8 (CM4 owned) -- GPU
+Row 4: PCIe x4 (CM4 owned) -- expansion
+Tube Port: (internal small connector) -- CPU co-processor cards
 
-### Audio Path
-Paula audio DMA output signals tapped before the RC filter network.
-PCM5102A I2S DAC receives these for clean stereo output.
-Paula retains all non-audio duties: floppy, serial (MIDI), interrupts.
-Audio input uses PCM1808 ADC, feeding back via AHI.
-MIDI uses Paula built-in UART (31.25kbps) with 6N137 optocoupler and DIN-5 onboard.
+Two independent bus domains:
+  68030 domain: Row 1 PCI
+  CM4 domain: Row 3, Row 4, M.2 NVMe
 
-### S3 Virge/VX Integration
-CyberVision 64/3D donor provides S3 Virge/VX and 4MB VRAM.
-Connected directly to local bus rather than via Zorro slot.
-CyberGraphX drivers support this chip and are used as-is.
-May be implemented as a daughterboard due to Virge/VX signal integrity requirements.
+### GPU Strategy
+Phase 1: GD5446 onboard (CGX, 16MB, works alone)
+Phase 2: RV350 daughter board (P96+Warp3D, above PS2)
+Phase 3: RX 5900 XT via CM4 PCIe (PS3+, ray tracing)
 
-### Storage
-IDE is the native A1200 interface via Gayle.
-Two 40-pin IDE headers for HDD and CDROM.
-SD cards via IDE-to-SD bridge adapters.
-NVMe M.2 via CM4 PCIe lane (Linux side only).
-SATA not included - bus speed mismatch, bridge chip complexity not justified.
-
-### Power Sequencing
-CM4 boots first from its own SD/eMMC.
-Linux initialises all I/O, USB, networking.
-CM4 then releases 68030 reset line - Amiga boots.
-68030 comes up, Kickstart loads, detects ARM co-processor via shared SRAM probe.
-ATtiny MCU handles ATX PS_ON, soft power, reset, LEDs.
-
----
-
-## Open Questions
-
-- S3 Virge/VX as daughterboard vs onboard?
-- SiI9022A vs ADV7513 for HDMI (availability vs cost)?
-- IDT70V24 vs CY7C136 for dual-port SRAM?
-- PCMCIA retained on mainboard or moved to Tornado-style expansion header?
-- iCE40 FPGA on GPIO header for arbitration - scope creep or necessary?
-- 40-pin GPIO header split (Amiga-accessible pins vs Linux-only)?
+CM4 as GPU controller:
+  68030 issues draw commands via dual-port SRAM
+  CM4 translates to Vulkan/OpenGL
+  GPU renders, result returned to 68030
+  68030 gets PS3-territory rendering without touching PCIe
 
 ---
 
-## Alternatives Considered and Rejected
+## Decisions Still Open
 
-- PCI/PCIe on 68030 bus - architecturally incompatible, 68k bus too slow
-- DIMM sockets for RAM - memory controller requires 72-pin SIMM bus width
-- SATA - needs bridge chip, Amiga bus cannot sustain SATA speeds
-- EDO RAM - not supported by AGA memory controller
-- Onboard 68040/060 - conflicts with trapdoor accelerator slot
-- BCM2712 (RPi5) - GPIO via PCIe hop, not cycle-accurate
-- CIX CD8180 (OPi6) - immature kernel, too risky for hardware project
+### FPGA Size
+Was: iCE40 (small, for Tube Port translation)
+Now considering: ECP5 (larger, can also do DDR3 memory controller)
+Decision: ECP5 preferred -- handles Tube Port + future DDR3 bridge
+          if SIMMs become unavailable
+
+### PCMCIA Retention
+Dropped: replaced by SD slots
+Confirmed: correct decision, no use case survives
+
+### VGA Output
+Optional: populated at build time
+Scan doubler from Lisa signal
+Not critical path -- HDMI 1 covers all cases
+
+### ADV7513 vs SiI9022A
+ADV7513 preferred: fractional PLL handles AGA non-standard clocks
+SiI9022A fallback: simpler, cheaper, less capable
+Decision: ADV7513 for best AGA compatibility
+
+---
+
+## Alternatives Rejected
+
+PCI/PCIe on 68030 bus: architecturally incompatible
+DIMM for Amiga RAM: Alice/Gayle require SIMM timing
+SATA: bridge chip complexity not justified
+EDO RAM: not supported by AGA controller
+Onboard 68040/060: conflicts with trapdoor slot
+BCM2712 RPi5: GPIO via PCIe hop, not cycle-accurate
+CIX CD8180 OPi6: immature kernel, too risky
+S3 Virge/VX onboard: BGA-288, moved to daughter board
+8MB VRAM on GD5446: only covers 1080p without double buffer
+No SIMMs: board must work without CM4, Alice needs real RAM
